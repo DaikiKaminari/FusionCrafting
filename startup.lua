@@ -1,4 +1,4 @@
--- [V0.3-BETA]
+-- [V1.0-STABLE]
 --- CONFIG & GLOBAL VARIABLES ---
 local inventory -- inventory API
 
@@ -76,7 +76,7 @@ local function injectorItems(isUpgrade)
         pedestalUpgrade.pushItems(pedestalUpgradeInjectorContainer, 1) -- pedestal upgrade -> injector container
     end
     inventory.pushItemsFromAllSlots(inputContainer, inputContainerInjectorContainer) -- input container -> injector container
-    sleep(2) -- injector container to injectors by ducts
+    -- do nothing else : injector container -> injectors (by ducts)
     return true
 end
 
@@ -84,7 +84,7 @@ local function endProcess(isUpgrade)
     local timeout = 0
     while coreContainer.pullItems(coreContainerCore, 2) == 0 do -- core -> core container
         timeout = timeout + 1
-        if timeout > 10 then
+        if timeout > 20 then
             return false
         end
         sleep(1)
@@ -97,6 +97,7 @@ local function endProcess(isUpgrade)
             if timeout > 5 then
                 return false
             end
+            sleep(1)
         end
     else
         coreContainer.pushItems(coreContainerAE, 1) -- core container -> AE
