@@ -49,17 +49,26 @@ end
 --- METHODS ---
 -- Returns true if both pedestals contains items (a stuff and an upgrade)
 local function isUpgrade()
-    return id = inputContainer.getItemMeta(1)["rawName"] == upgradeFakeItem
+    return inputContainer.getItemMeta(1)["rawName"] == upgradeFakeItem
 end
 
 local function coreItems(isUpgrade)
     inputContainer.pushItems(inputContainerCoreContainer, 1) -- input container -> core container
     if isUpgrade then
-        coreContainer.pushItem(coreContainerAE, 1) -- core container -> AE
-        coreContainer.pullItems(coreContainerPedestalStuff, 1) -- pedestal stuff -> core container
+        coreContainer.pushItems(coreContainerAE, 1) -- core container -> AE
+        local timeout = 0
+        while coreContainer.pullItems(coreContainerPedestalStuff, 1) == 0 do -- pedestal stuff -> core container
+            print("Missing stuff on the pedestal.")
+            timeout = timeout + 1
+            if timeout > 20 then
+                return false
+            end
+            sleep(1)
+        end
         inventory.pushItemsFromAllSlots(kitContainer, kitContainerAE) -- kit container -> AE
     end
     coreContainer.pushItems(coreContainerCore, 1) -- core container -> core
+    return true
 end
 
 local function injectorItems(isUpgrade)
@@ -68,6 +77,7 @@ local function injectorItems(isUpgrade)
     end
     inventory.pushItemsFromAllSlots(inputContainer, inputContainerInjectorContainer) -- input container -> injector container
     sleep(2) -- injector container to injectors by ducts
+    return true
 end
 
 local function endProcess(isUpgrade)
@@ -91,7 +101,7 @@ end
 
 local function process(isUpgrade)
     local timeout = 0
-    while isUpgrade and not next(pedestalUpgrade.list()) do
+    while isUpgrade and not next(pedestalUpgrade.list()) do -- waits an upgrade is provided
         print("Missing upgrade on the pedestal.")
         timeout = timeout + 1
         if timeout > 20 then
@@ -99,8 +109,8 @@ local function process(isUpgrade)
         end
         sleep(1)
     end
-    coreItems(isUpgrade)
-    injectorItems(isUpgrade)
+    if not coreItems(isUpgrade) then return false end
+    if not injectorItems(isUpgrade) then return false end
     return endProcess(isUpgrade) 
 end
 
