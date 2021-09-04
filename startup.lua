@@ -1,3 +1,4 @@
+-- [V0.1-BETA]
 --- CONFIG & GLOBAL VARIABLES ---
 local inventory -- inventory API
 
@@ -18,12 +19,17 @@ local coreContainerCore = "up"
 local coreContainerAE = "south"
 local coreContainerPedestalStuff = "north"
 
+local kitContainer
+local kitContainerName = "thermalexpansion:storage_strongbox_1"
+local kitContainerAE = "up"
+
 --- INIT ---
 local function init()
     inventory = require("inventory")
     inputContainer = assert(peripheral.wrap(inputContainerName), "Input container cannot be found.")
     coreContainer = assert(peripheral.wrap(coreContainerName), "Core container cannot be found.")
     pedestalUpgrade = assert(peripheral.wrap(pedestalUpgradeName), "Pedestal upgrade cannot be found.")
+    kitContainer = assert(peripheral.wrap(kitContainerName), "Kit container cannot be found.")
 end
 
 --- METHODS ---
@@ -36,17 +42,17 @@ local function isUpgrade()
 end
 
 local function coreItems(isUpgrade)
-    inputContainer.pushItems(inputContainerCoreContainer, 1) -- input container -> core container
     if isUpgrade then
-        coreContainer.pushItems(coreContainerAE, 1) -- core container -> AE
-        coreContainer.pullItems(coreContainerPedestalStuff, 1) -- pedestal -> core container
+        coreContainer.pullItems(coreContainerPedestalStuff, 1) -- pedestal stuff -> core container
+        inventory.pushItemsFromAllSlots(kitContainer, kitContainerAE)
+    else
+        inputContainer.pushItems(inputContainerCoreContainer, 1) -- input container -> core container
     end
     coreContainer.pushItems(coreContainerCore, 1) -- core container -> core
 end
 
 local function injectorItems(isUpgrade)
     if isUpgrade then
-        coreContainer.pullItems(coreContainerPedestalStuff, 1) -- pedestal stuff -> core container
         pedestalUpgrade.pushItems(pedestalUpgradeInjectorContainer, 1) -- pedestal upgrade -> injector container
     end
     inventory.pushItemsFromAllSlots(inputContainer, inputContainerInjectorContainer) -- input container -> injector container
@@ -54,7 +60,7 @@ local function injectorItems(isUpgrade)
 end
 
 local function endProcess(isUpgrade)
-    local timetout = 0
+    local timeout = 0
     while coreContainer.pullItems(coreContainerCore, 2) == 0 do -- core -> core container
         timeout = timeout + 1
         if timeout > 10 then
