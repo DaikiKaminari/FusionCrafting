@@ -1,4 +1,4 @@
--- [V1.2]
+-- [V1.2-STABLE]
 local inventory = {}
 
 -- returns true if fields from item1 are contained in item2

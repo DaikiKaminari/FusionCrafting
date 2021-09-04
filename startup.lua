@@ -1,24 +1,29 @@
--- [V0.1-BETA]
+-- [V0.2-BETA]
 --- CONFIG & GLOBAL VARIABLES ---
 local inventory -- inventory API
 
---local redstoneInputSide = "right"
+-- the item that is in the first slot of the input container to indicate it's an upgrade kit
+local upgradeFakeItem = "item.tconstruct.materials.necrotic_bone"
 
+-- where the items are provided by ME interfaces (blocking mode)
 local inputContainer
 local inputContainerName = "bottom"
 local inputContainerCoreContainer = "west"
 local inputContainerInjectorContainer = "east"
 
+-- where the desired upgrade is placed (can actually be any type of container)
 local pedestalUpgrade
 local pedestalUpgradeName = "thaumcraft:tilepedestal_4"
 local pedestalUpgradeInjectorContainer = "down"
 
+-- where core item will be before being sent in the core (an enderchest is good for this purpose)
 local coreContainer
 local coreContainerName = "minecraft:ender chest_2"
 local coreContainerCore = "up"
 local coreContainerAE = "south"
 local coreContainerPedestalStuff = "north"
 
+-- where renamed items are stored to validate the AE craft
 local kitContainer
 local kitContainerName = "thermalexpansion:storage_strongbox_1"
 local kitContainerAE = "up"
@@ -30,23 +35,29 @@ local function init()
     coreContainer = assert(peripheral.wrap(coreContainerName), "Core container cannot be found.")
     pedestalUpgrade = assert(peripheral.wrap(pedestalUpgradeName), "Pedestal upgrade cannot be found.")
     kitContainer = assert(peripheral.wrap(kitContainerName), "Kit container cannot be found.")
+    local monitor = peripheral.find("monitor")
+    term.clear()
+    if monitor then
+        term.redirect(monitor)
+        term.clear()
+        term.setCursorPos(1, 1)
+    else
+        print("Warning : no monitor found.")
+    end
 end
 
 --- METHODS ---
 -- Returns true if both pedestals contains items (a stuff and an upgrade)
 local function isUpgrade()
-    if pedestalUpgrade.getItem(1) then
-        return true
-    end
-    return false
+    return id = inputContainer.getItemMeta(1)["rawName"] == upgradeFakeItem
 end
 
 local function coreItems(isUpgrade)
+    inputContainer.pushItems(inputContainerCoreContainer, 1) -- input container -> core container
     if isUpgrade then
+        coreContainer.pushItem(coreContainerAE, 1) -- core container -> AE
         coreContainer.pullItems(coreContainerPedestalStuff, 1) -- pedestal stuff -> core container
-        inventory.pushItemsFromAllSlots(kitContainer, kitContainerAE)
-    else
-        inputContainer.pushItems(inputContainerCoreContainer, 1) -- input container -> core container
+        inventory.pushItemsFromAllSlots(kitContainer, kitContainerAE) -- kit container -> AE
     end
     coreContainer.pushItems(coreContainerCore, 1) -- core container -> core
 end
@@ -79,6 +90,15 @@ local function endProcess(isUpgrade)
 end
 
 local function process(isUpgrade)
+    local timeout = 0
+    while isUpgrade and not next(pedestalUpgrade.list()) do
+        print("Missing upgrade on the pedestal.")
+        timeout = timeout + 1
+        if timeout > 20 then
+            return false
+        end
+        sleep(1)
+    end
     coreItems(isUpgrade)
     injectorItems(isUpgrade)
     return endProcess(isUpgrade) 
