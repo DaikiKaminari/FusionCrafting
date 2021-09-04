@@ -1,4 +1,4 @@
--- [V0.2-BETA]
+-- [V0.3-BETA]
 --- CONFIG & GLOBAL VARIABLES ---
 local inventory -- inventory API
 
@@ -91,8 +91,13 @@ local function endProcess(isUpgrade)
     end
     if isUpgrade then
         coreContainer.pushItems(coreContainerPedestalStuff, 1) -- core container -> pedestal stuff
-        sleep(1)
-        pedestalUpgrade.pullItems(pedestalUpgradeInjectorContainer, 1) -- injector container -> pedestal upgrade
+        local timeout = 0
+        while pedestalUpgrade.pullItems(pedestalUpgradeInjectorContainer, 1) == 0 do -- injector container -> pedestal upgrade
+            timeout = timeout + 1
+            if timeout > 5 then
+                return false
+            end
+        end
     else
         coreContainer.pushItems(coreContainerAE, 1) -- core container -> AE
     end
