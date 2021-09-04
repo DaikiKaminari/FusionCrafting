@@ -1,12 +1,12 @@
 --- CONFIG & GLOBAL VARIABLES ---
 local inventory -- inventory API
 
-local redstoneInputSide = "right"
+--local redstoneInputSide = "right"
 
 local inputContainer
 local inputContainerName = "bottom"
 local inputContainerCoreContainer = "west"
-local inputContainerInjectorContainer = "est"
+local inputContainerInjectorContainer = "east"
 
 local pedestalUpgrade
 local pedestalUpgradeName = "thaumcraft:tilepedestal_4"
@@ -22,8 +22,8 @@ local coreContainerPedestalStuff = "north"
 local function init()
     inventory = require("inventory")
     inputContainer = assert(peripheral.wrap(inputContainerName), "Input container cannot be found.")
-    coreContainer = assert(peripheralwrap(coreContainerName), "Core container cannot be found.")
-    pedestalUpgrade = asser(peripheral.wrap(pedestalUpgradeName), "Pedestal upgrade cannot be found.")
+    coreContainer = assert(peripheral.wrap(coreContainerName), "Core container cannot be found.")
+    pedestalUpgrade = assert(peripheral.wrap(pedestalUpgradeName), "Pedestal upgrade cannot be found.")
 end
 
 --- METHODS ---
@@ -49,12 +49,19 @@ local function injectorItems(isUpgrade)
         coreContainer.pullItems(coreContainerPedestalStuff, 1) -- pedestal stuff -> core container
         pedestalUpgrade.pushItems(pedestalUpgradeInjectorContainer, 1) -- pedestal upgrade -> injector container
     end
-    inventory.pushItemsFromAllSlots(inputContainerInjectorContainer) -- input container -> injector container
+    inventory.pushItemsFromAllSlots(inputContainer, inputContainerInjectorContainer) -- input container -> injector container
     sleep(2) -- injector container to injectors by ducts
 end
 
 local function endProcess(isUpgrade)
-    coreContainer.pullItems(coreContainerCore, 1) -- core -> core container
+    local timetout = 0
+    while coreContainer.pullItems(coreContainerCore, 2) == 0 do -- core -> core container
+        timeout = timeout + 1
+        if timeout > 10 then
+            return false
+        end
+        sleep(1)
+    end
     if isUpgrade then
         coreContainer.pushItems(coreContainerPedestalStuff, 1) -- core container -> pedestal stuff
         sleep(1)
@@ -62,16 +69,13 @@ local function endProcess(isUpgrade)
     else
         coreContainer.pushItems(coreContainerAE, 1) -- core container -> AE
     end
-    
+    return true
 end
 
 local function process(isUpgrade)
     coreItems(isUpgrade)
     injectorItems(isUpgrade)
-    while rs.getInput(redstoneInputSide) do
-        sleep(1)
-    end
-    endProcess(isUpgrade)
+    return endProcess(isUpgrade) 
 end
 
 
@@ -80,7 +84,13 @@ local function main()
     init()
     while true do
         if next(inputContainer.list()) then
-            process(isUpgrade())
+            print("Start craft...")
+            if process(isUpgrade()) then
+                print("Craft finished.")
+            else
+                print("Craft canceled : timeout.")
+            end
+            print()
         end
         sleep(1)
     end

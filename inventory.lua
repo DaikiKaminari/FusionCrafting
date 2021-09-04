@@ -69,5 +69,6 @@ local function pushItemsFromAllSlots(container, direction, quantity, toSlot)
     end
     return n
 end
+inventory.pushItemsFromAllSlots = pushItemsFromAllSlots
 
 return inventory
